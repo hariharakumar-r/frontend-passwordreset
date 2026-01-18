@@ -30,11 +30,19 @@ function ForgotPassword() {
       const response = await authService.forgotPassword(email);
       console.log('[ForgotPassword] OTP sent successfully:', response.data);
       
-      setSuccess('✓ OTP sent to your email. Check your inbox!');
+      let successMsg = '✓ OTP sent to your email. Check your inbox!';
+      
+      // Handle delayed email response
+      if (response.data.warning) {
+        successMsg = response.data.message;
+      }
+      
+      setSuccess(successMsg);
       setStep(2);
     } catch (err) {
       console.error('[ForgotPassword] Error sending OTP:', err);
-      const errorMsg = err.response?.data?.message || err.message || 'Failed to send OTP. Please check your email and try again.';
+      const errorMsg = err.response?.data?.message || 
+                      'Request timeout. The backend server might be slow. Please try again in a few moments.';
       setError(errorMsg);
     } finally {
       setLoading(false);

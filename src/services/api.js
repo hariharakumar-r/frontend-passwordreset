@@ -22,7 +22,7 @@ const api = axios.create({
     'Content-Type': 'application/json'
   },
   withCredentials: true,
-  timeout: 10000
+  timeout: 30000 // Increased from 10000 to 30000ms (30 seconds) for email operations
 });
 
 // Add token to requests
@@ -51,7 +51,8 @@ api.interceptors.response.use(
     console.error('[API Response Error]', {
       status: error.response?.status,
       message: error.response?.data?.message,
-      error: error.message
+      error: error.message,
+      code: error.code
     });
     
     if (error.response?.status === 401) {
