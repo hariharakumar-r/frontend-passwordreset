@@ -1,6 +1,18 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// Determine API URL based on current hostname
+const getAPIURL = () => {
+  const hostname = window.location.hostname;
+  const isProduction = hostname === 'frontend-passwordreset.vercel.app';
+  
+  if (isProduction) {
+    return import.meta.env.VITE_API_URL_PROD || 'https://backend-passwordreset-7owr.onrender.com/api';
+  } else {
+    return import.meta.env.VITE_API_URL_LOCAL || 'http://localhost:5000/api';
+  }
+};
+
+const API_URL = getAPIURL();
 
 const api = axios.create({
   baseURL: API_URL,
@@ -18,6 +30,19 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// Handle response errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
 
 export const authService = {
   register: (data) => api.post('/auth/register', data),
