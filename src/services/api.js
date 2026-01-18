@@ -5,11 +5,13 @@ const getAPIURL = () => {
   const hostname = window.location.hostname;
   const isProduction = hostname === 'frontend-passwordreset.vercel.app';
   
-  if (isProduction) {
-    return import.meta.env.VITE_API_URL_PROD || 'https://backend-passwordreset-7owr.onrender.com/api';
-  } else {
-    return import.meta.env.VITE_API_URL_LOCAL || 'http://localhost:5000/api';
-  }
+  const apiUrl = isProduction
+    ? 'https://backend-passwordreset-7owr.onrender.com/api'
+    : 'http://localhost:5000/api';
+  
+  console.log(`[API Config] Hostname: ${hostname}, Environment: ${isProduction ? 'PRODUCTION' : 'LOCAL'}, API URL: ${apiUrl}`);
+  
+  return apiUrl;
 };
 
 const API_URL = getAPIURL();
@@ -19,22 +21,39 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json'
   },
-  withCredentials: true
+  withCredentials: true,
+  timeout: 10000
 });
 
 // Add token to requests
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    console.log(`[API Request] ${config.method.toUpperCase()} ${config.url}`);
+    return config;
+  },
+  (error) => {
+    console.error('[API Request Error]', error);
+    return Promise.reject(error);
   }
-  return config;
-});
+);
 
 // Handle response errors
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log(`[API Response] ${response.status} ${response.statusText}`);
+    return response;
+  },
   (error) => {
+    console.error('[API Response Error]', {
+      status: error.response?.status,
+      message: error.response?.data?.message,
+      error: error.message
+    });
+    
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
@@ -45,12 +64,30 @@ api.interceptors.response.use(
 );
 
 export const authService = {
-  register: (data) => api.post('/auth/register', data),
-  login: (data) => api.post('/auth/login', data),
-  forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
-  verifyOTP: (data) => api.post('/auth/verify-otp', data),
-  resetPassword: (data) => api.post('/auth/reset-password', data),
-  getProfile: () => api.get('/auth/profile')
+  register: (data) => {
+    console.log('[authService] Calling register');
+    return api.post('/auth/register', data);
+  },
+  login: (data) => {
+    console.log('[authService] Calling login');
+    return api.post('/auth/login', data);
+  },
+  forgotPassword: (email) => {
+    console.log('[authService] Calling forgotPassword for:', email);
+    return api.post('/auth/forgot-password', { email });
+  },
+  verifyOTP: (data) => {
+    console.log('[authService] Calling verifyOTP');
+    return api.post('/auth/verify-otp', data);
+  },
+  resetPassword: (data) => {
+    console.log('[authService] Calling resetPassword');
+    return api.post('/auth/reset-password', data);
+  },
+  getProfile: () => {
+    console.log('[authService] Calling getProfile');
+    return api.get('/auth/profile');
+  }
 };
 
 export default api;

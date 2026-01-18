@@ -15,15 +15,27 @@ function ForgotPassword() {
 
   const handleSendOTP = async (e) => {
     e.preventDefault();
+    
+    if (!email.trim()) {
+      setError('Please enter your email');
+      return;
+    }
+    
     setLoading(true);
     setError('');
+    setSuccess('');
 
     try {
-      await authService.forgotPassword(email);
-      setSuccess('OTP sent to your email');
+      console.log(`[ForgotPassword] Sending OTP to: ${email}`);
+      const response = await authService.forgotPassword(email);
+      console.log('[ForgotPassword] OTP sent successfully:', response.data);
+      
+      setSuccess('✓ OTP sent to your email. Check your inbox!');
       setStep(2);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to send OTP');
+      console.error('[ForgotPassword] Error sending OTP:', err);
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to send OTP. Please check your email and try again.';
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -31,15 +43,25 @@ function ForgotPassword() {
 
   const handleVerifyOTP = async (e) => {
     e.preventDefault();
+    
+    if (!otp.trim()) {
+      setError('Please enter the OTP');
+      return;
+    }
+    
     setLoading(true);
     setError('');
+    setSuccess('');
 
     try {
+      console.log('[ForgotPassword] Verifying OTP');
       await authService.verifyOTP({ email, otp });
-      setSuccess('OTP verified successfully');
+      setSuccess('✓ OTP verified successfully');
       setStep(3);
     } catch (err) {
-      setError(err.response?.data?.message || 'Invalid OTP');
+      console.error('[ForgotPassword] Error verifying OTP:', err);
+      const errorMsg = err.response?.data?.message || 'Invalid or expired OTP. Please try again.';
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -52,16 +74,25 @@ function ForgotPassword() {
       setError('Passwords do not match');
       return;
     }
+    
+    if (newPassword.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
 
     setLoading(true);
     setError('');
+    setSuccess('');
 
     try {
+      console.log('[ForgotPassword] Resetting password');
       await authService.resetPassword({ email, otp, newPassword });
-      setSuccess('Password reset successful! Redirecting to login...');
+      setSuccess('✓ Password reset successful! Redirecting to login...');
       setTimeout(() => navigate('/login'), 2000);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to reset password');
+      console.error('[ForgotPassword] Error resetting password:', err);
+      const errorMsg = err.response?.data?.message || 'Failed to reset password. Please try again.';
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -99,13 +130,13 @@ function ForgotPassword() {
           </div>
 
           {error && (
-            <div className="bg-red-100 text-red-700 p-3 rounded-lg mb-4 text-sm">
+            <div className="bg-red-100 text-red-700 p-3 rounded-lg mb-4 text-sm border border-red-300">
               {error}
             </div>
           )}
 
           {success && (
-            <div className="bg-green-100 text-green-700 p-3 rounded-lg mb-4 text-sm">
+            <div className="bg-green-100 text-green-700 p-3 rounded-lg mb-4 text-sm border border-green-300">
               {success}
             </div>
           )}
